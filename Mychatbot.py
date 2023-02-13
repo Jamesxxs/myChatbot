@@ -185,4 +185,70 @@ df.insert(1, 'Cleaned Context', cleaning(df['Context']), True)
 # the last boolean indicates whether to allow duplicates
 df.head()
 
+# %% [markdown]
+# ### Create function to clean our data and carry out lemmatization
+
+# %%
+def text_normalization(text):
+    # convert to all lower letters
+    text = str(text).lower()  
+    # remove any special characters including numbers
+    spl_char_text = re.sub(r'[^a-z]', ' ', text)  
+    # tokenize words
+    tokens = nltk.word_tokenize(spl_char_text) 
+    # lemmatizer initiation
+    lema = wordnet.WordNetLemmatizer()  
+    # parts of speech
+    tags_list = pos_tag(tokens, tagset = None)  
+    lema_words = []
+    for token, pos_token in tags_list:
+        # if the tag from tag_list is a verb, assign 'v' to it's pos_val
+        if pos_token.startswith('V'):  
+            pos_val = 'v'
+        # adjective
+        elif pos_token.startswith('J'):  
+            pos_val = 'a'
+        # adverb
+        elif pos_token.startswith('R'):  
+            pos_val = 'r'
+        else:  # otherwise it must be a noun
+            pos_val = 'n'
+        # performing lemmatization
+        lema_token = lema.lemmatize(token, pos_val)  
+         # addid the lemamtized words into our list
+        lema_words.append(lema_token) 
+    # return our list as a human sentence
+    return " ".join(lema_words)  
+
+# %%
+normalized = df['Context'].apply(text_normalization)
+df.insert(2, 'Normalized Context', normalized, True)
+df.head()
+
+# %% [markdown]
+# ### Also create function to remove stop words from text
+
+# %%
+
+def removeStopWords(text):
+    Q = []
+    s = text.split()  # create an array of words from our text sentence, cut it into words
+    q = ''
+    stop = stopwords.words('english')
+    for w in s:  # for every word in the given sentence if the word is a stop word ignore it
+        if w in stop:
+            continue
+        else:  # otherwise add it to the end of our array
+            Q.append(w)
+        q = " ".join(Q)  # create a sentence out of our array of non stop words
+    return q
+
+# %%
+normalized_non_stopwords = df['Normalized Context'].apply(removeStopWords)
+
+df.insert(3, 
+          'Normalized and StopWords Removed', 
+          normalized_non_stopwords, True)
+df.head()
+
 
