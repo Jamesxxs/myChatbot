@@ -283,8 +283,102 @@ def chat_bow(question):
     # use index to choose the reply from the Text Response feature(column)
     return df['Text Response'].loc[index_value]  
 
-
-
-# %%
 # call the chat_bow function with the question as an argument
 chat_bow('Will you help me and tell me more about yourself?')
+
+def text_extract(texts:list,vocabulary=None,model_type = 'tfidf',n_features = 1000):
+    """
+    tf or tfidf
+    Params
+    - texts 
+    - vacabulary 
+    """
+    from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
+    import pandas as pd
+    print(f"Extracting {model_type} features...")
+    if model_type == 'tfidf':
+        Vectorizer = TfidfVectorizer
+    elif model_type =='tf':
+        Vectorizer = CountVectorizer
+    else:
+        raise Exception("model_type should be tfidf or tf")
+    vectorizer = Vectorizer(
+                        max_df=0.95, 
+                        min_df=2, #（doc frequency）
+                        max_features=n_features,# how many words
+                        vocabulary= vocabulary # vacabs
+                        )
+    array = vectorizer.fit_transform(texts).toarray()
+    print(f"arr shape: {array.shape}")
+    df_array = pd.DataFrame(array,columns=vectorizer.get_feature_names_out())
+    return df_array,vectorizer
+
+
+df_tfidf,tfidf = text_extract(df['Normalized Context'],model_type = 'tfidf')
+
+
+def chat_tfidf(question):
+    tidy_question = text_normalization(
+                    removeStopWords(question)# remove stopwords
+    )  
+    # clean & lemmatize the question
+    tf = tfidf.transform([tidy_question]).toarray()  
+    # convert the question into a vector
+    cos = 1- pairwise_distances(df_tfidf, 
+                                tf, 
+                                metric = 'cosine') 
+    # calculate the cosine value
+    index_value = cos.argmax()  
+    # find the index of the maximum cosine value
+    return df['Text Response'].loc[index_value]  
+    # use index to choose the reply from the Text Response feature(column)
+
+# %%
+# call the chat_tfidf function with the question as an argument
+chat_tfidf('who is your favorite star?')
+
+# %%
+from textblob import TextBlob
+
+def senti(text):
+    blob = TextBlob(text)
+    sentiment = (blob.polarity)
+    return (blob.polarity)
+
+print("polarity",senti("This is good"))
+print("polarity",senti("This is not good"))
+
+def chatbot():
+    exit_chatbot = False
+    first_loop = True
+    method = None
+    print(30*"="+"Welcome to ChatBot"+30*"=")
+    # select the model
+    while method not in ['tfidf','bow']:
+        method = input("Choose the model: tfidf or bow(bag of words): ")
+        if method == 'q':
+            return # exit
+    
+    while exit_chatbot == False:
+        if (first_loop):
+            print("Welcome to the chatbot! Type q to close it, otherwise let's keep talking :)")
+            
+            first_loop = False
+        user_input_question = input("Your question:")
+        # print emotion of user input
+        if(senti(user_input_question) < 0) :
+            print("(emotion: \U0001F44E)")
+        else: 
+            print("(emotion: \U0001F44D)")
+        
+        # if user want to exit
+        if(user_input_question.lower() == 'q'): 
+            exit_chatbot = True
+            print("Thank you for your time and see you around!")
+        else :
+            if (method == 'bow') : 
+                print('Chatbot answer: ', chat_bow(user_input_question))
+            elif (method == 'tfidf') : 
+                print('Chatbot answer: ', chat_tfidf(user_input_question))
+            
+chatbot()
