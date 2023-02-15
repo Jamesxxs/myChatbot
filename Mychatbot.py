@@ -252,3 +252,39 @@ df.insert(3,
 df.head()
 
 
+# %% [markdown]
+# # Bag of words
+# ### BOW is a method to extract features from text documents. These features can be used for training machine learning algorithms. It creates a vocabulary of all the unique words occurring in all the documents in the training set
+
+# %%
+cv = CountVectorizer()  # initializing count vectorizer
+
+x_bow = cv.fit_transform(df['Normalized Context']).toarray()  # badly speaking this converts words to vectors
+
+features_bow = cv.get_feature_names_out()  # use function to get all the normalized words
+df_bow = pd.DataFrame(x_bow, 
+                      columns = features_bow)  # create dataframe to show the 0, 1 value for each word
+df_bow.head()
+
+# %%
+def chat_bow(question):
+    # apply text normalization
+    tidy_question = text_normalization(removeStopWords(question))  
+    
+    # clean & lemmatize the question
+    cv_ = cv.transform([tidy_question]).toarray()  
+    
+    # convert the question into a vector
+    cos = 1- pairwise_distances(df_bow, cv_, metric = 'cosine')  #
+    # calculate the cosine value
+    # find the index of the maximum cosine value
+    index_value = cos.argmax()  
+
+    # use index to choose the reply from the Text Response feature(column)
+    return df['Text Response'].loc[index_value]  
+
+
+
+# %%
+# call the chat_bow function with the question as an argument
+chat_bow('Will you help me and tell me more about yourself?')
