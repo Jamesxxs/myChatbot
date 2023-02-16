@@ -12,6 +12,10 @@ from sklearn.metrics import pairwise_distances  # cosine similarity
 from nltk import word_tokenize
 from nltk.corpus import stopwords 
 nltk.download('omw-1.4')  # this seems to be a requirement for the .apply() function to work 
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('wordnet')
 
 # %%
 df_context= pd.read_excel('dialog_talk_agent.xlsx')  # read the database into a data frame
