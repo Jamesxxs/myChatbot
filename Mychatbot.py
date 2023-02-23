@@ -1,6 +1,7 @@
-# # Import necessary dependencies 
+# %%
+# Import necessary dependencies 
 import pandas as pd
-import nltk
+import nltk # natural language toolkit
 import numpy as np
 import re  #regular expressions
 from nltk.stem import wordnet  # for lemmatization
@@ -18,40 +19,62 @@ nltk.download('averaged_perceptron_tagger')
 nltk.download('wordnet')
 
 # %%
+# read an Excel file of dialog dataset into a pandas DataFrame and displays the first 5 rows.
 df_context= pd.read_excel('dialog_talk_agent.xlsx')  # read the database into a data frame
 df_context.head()  # see first 5 lines
 
 # %%
-# check the Context length
+# plot the histogram of string length vs frequency based on the dialog dataset
+# map each elements to its string length
 length1 = df_context['Context'].map(lambda x:len(str(x)))
+
+# define the figure size
 length1.hist(figsize=(8,6))
+# define the font
+font1 = {'family':'serif','color':'blue','size':20}
+font2 = {'family':'serif','color':'darkred','size':15}
+# set title and labels
+plt.title("Dialog_dataset", fontdict = font1)
+plt.xlabel("string length", fontdict = font2)
+plt.ylabel("frequency", fontdict = font2)
+
 plt.show()
 
 # %% [markdown]
-# Why not add another dataset?
+# Add another dataset
 
 # %%
-# load train data
+# load json file of another training data (tv show related dataset)
+# into a pandas DataFrame and displays the first 5 rows.
 df_question= pd.read_json('train.json')  # read the database into a data frame
 df_question.head()  # see first 5 lines
 
 # %%
-# check the question length
+# plot the histogram of string length vs frequency based on the new training dataset
+# map each elements to its string length
 length2 = df_question['question'].map(lambda x:len(str(x)))
+
+# set figure size
 length2.hist(figsize=(8,6))
+# set title and labels
+plt.title("Training_dataset", fontdict = font1)
+plt.xlabel("string length", fontdict = font2)
+plt.ylabel("frequency", fontdict = font2)
+
 plt.show()
 
 # %%
-import re
-
+# removes all non-alphanumeric characters and non-Chinese from a string, replaces them with spaces,
+# and then removes any extra whitespace.
 def remove_punctuation(line):
     line = str(line)
     if line.strip()=='':
         return ''
     rule = re.compile(u"[^a-zA-Z0-9\u4E00-\u9FA5]")
-    line = rule.sub(' ',line)
-    return ' '.join(line.split())
+    line = rule.sub(' ',line) # replaces any character that does not matches the pattern/rule with a space character
+    return ' '.join(line.split()) # 'split' removes any extra whitespace
 
+# extract English from a string and return it in lowercase
 def extract_english(text:str):
     # remove non-alphabet characters
     words = text.lower().split(' ')
@@ -59,9 +82,13 @@ def extract_english(text:str):
     return ' '.join(words)
 
 
+# stopwords downloaded from the dependency nltk
+STOPWORDS_LIST = stopwords.words('english')
+
+# remove any stop word in a text and return it as original type
 def remove_stopwords(words,stopwords = None):
     """
-    # define a function that removes stopwords
+    define a function that removes stopwords
     words: list or str
     stopwords: stopword list or str
     """
@@ -70,39 +97,55 @@ def remove_stopwords(words,stopwords = None):
         words = words.split()
         return_list = False
     if stopwords:
-        words = [word for word in words if word not in stopwords]
+        words = [w for w in words if w not in stopwords]
     if return_list:
         return words
     else:
         return ' '.join(words)
 
+# %%
+from os import path
+from PIL import Image
+
+# get current working directory
+d = path.dirname(__file__) if "__file__" in locals() else os.getcwd()
+# create a bubble mask for the wordcloud 
+mask = np.array(Image.open(path.join(d, "bubble_mask.png")))
+
+# plot a image which shows some frequent words in a given dataset
 def plot_wordcloud(content,file_prefix =None):
     import wordcloud
-    import matplotlib.pyplot as plt
-    w = wordcloud.WordCloud(
-    width = 1600,height=1200,background_color='white',collocations=False
+    
+    wc = wordcloud.WordCloud(
+    width = 1600,height=1200,background_color='white',collocations=False,mask=mask
     )
     if type(content) == dict:
-        w.generate_from_frequencies(content)
+        wc.generate_from_frequencies(content)
     elif type(content) == str:
-        w.generate(content)
+        wc.generate(content)
     else:
         raise ValueError("content should be frequent dict or text str")
-    w.to_file(f"{file_prefix} - " if file_prefix else '' + 'word_cloud.png')
+        
+    # store the generated image
+    wc.to_file(f"{file_prefix} - " if file_prefix else '' + 'word_cloud.png')
+    
     plt.figure(dpi=400)
-    plt.imshow(w,interpolation='catrom')
+    plt.imshow(wc,interpolation='catrom')
     plt.axis('off')
+    
     plt.show()
-STOPWORDS_LIST = stopwords.words('english')
 
-
+# %%
+# preprocess the 'questuon' of the training dataset
 questions = df_question['question'].map(lambda x: remove_stopwords(
                                                     extract_english(
                                                     remove_punctuation(x)
                                                     ),
                                                     stopwords=STOPWORDS_LIST))
+# convert series to str
 questions = ' '.join(questions)
-word_frequency(questions.split(' '))
+# plot word cloud where the size of each word is proportional to 
+# its frequency in the input text
 plot_wordcloud(questions)
 
 # %% [markdown]
